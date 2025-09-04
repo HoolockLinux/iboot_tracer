@@ -1,0 +1,41 @@
+CC_FOR_TARGET = clang
+AS_FOR_TARGET ?= $(CC_FOR_TARGET)
+HEADERS = $(wildcard src/*.h)
+CFLAGS_FOR_TARGET ?= -std=gnu23 -fvisibility=hidden -fno-stack-protector -fno-exceptions -nostdlib -ffreestanding -mgeneral-regs-only -flto=full -Oz
+ASFLAGS_FOR_TARGET ?= $(CFLAGS_FOR_TARGET)
+LDFLAGS_FOR_TARGET ?= -Wl,-preload -Wl,-e,_entry -Wl,-order_file,sym_order.txt -flto=full -fvisibility=hidden 
+OBJS = payload.o entry.o uart.o
+
+all: dirs $(OBJDIR)/payload.bin.o
+
+dirs:
+	@mkdir -p $(OBJDIR)
+	@mkdir -p $(OBJDIR)/shellcode
+
+$(OBJDIR)/shellcode/%.o: src/%.S
+	$(AS_FOR_TARGET) $(ASFLAGS_FOR_TARGET) -c -o $@ $<
+
+$(OBJDIR)/shellcode/%.o: src/%.c $(HEADERS)
+	$(CC_FOR_TARGET) $(CFLAGS_FOR_TARGET) -c -o $@ $<
+
+$(OBJDIR)/shellcode/entry.o: src/entry.S
+	$(AS_FOR_TARGET) $(ASFLAGS_FOR_TARGET) -c -o $@ $<
+
+payload.macho: $(patsubst %.o,$(OBJDIR)/shellcode/%.o, $(OBJS))
+	$(CC_FOR_TARGET) $(CFLAGS_FOR_TARGET) $(LDFLAGS_FOR_TARGET) -o $@ $^
+	./checkPayload.sh $@
+
+payload.bin: payload.macho
+	../tools/vmacho -fM 0x2000 $^ $@
+
+payload.bin.c: payload.bin
+	echo '#include <stdint.h>' > $@
+	xxd -iC $^ | sed -e 's/unsigned int/uint32_t/' -e 's/unsigned char/uint8_t/' >> $@
+
+$(OBJDIR)/payload.bin.o: payload.bin.c
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+clean:
+	rm -f payload.bin.c payload.bin payload.macho
+
+.PHONY: all dirs clean

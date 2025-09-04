@@ -1,0 +1,11 @@
+obj/
+.vscode
+ibootpatch3
+*.macho
+*.bin
+*.im4p
+*.img4
+tools/vmacho
+payload.bin.c
+.DS_Store
+shellcode/src/trace_config.h

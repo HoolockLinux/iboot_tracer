@@ -1,0 +1,3 @@
+[submodule "plooshfinder"]
+	path = plooshfinder
+	url = https://github.com/palera1n/plooshfinder.git
