@@ -33,7 +33,7 @@ clean:
 	@$(MAKE) -C shellcode clean
 
 ibootpatch3: $(OBJS) $(PLOOSHFINDER) shellcode
-	$(CC) $(CFLAGS) $(LDFLAGS) $(LIBS) $(INCLDIRS) $(OBJS) $(OBJDIR)/payload.bin.o -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(OBJDIR)/payload.bin.o $(LIBS) $(INCLDIRS) -o $@
 
 $(OBJDIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) $(INCLDIRS) -c -o $@ $<

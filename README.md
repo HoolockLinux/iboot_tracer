@@ -4,6 +4,17 @@ Hack iBoot data abort handler and corrupt its pagetables
 to trace its MMIO access. Supports T8010, T8011, T8012,
 T8015 and is designed for iOS 15 iBoots.
 
+## Building
+
+Building is supported on macOS and Linux. clang must be used.
+
+You must use a sufficiently recent version of GNU Make, and not a
+2006 GNU Make.
+
+On Linux, building is supported with [cctools-port](https://github.com/tpoechtrager/cctools-port).
+The makefiles assume that the tools are prefixed with `cctools-`.
+You can override them with `LD_FOR_TARGET` and `OTOOL` variables.
+
 ## iBoot selection
 
 The code is placed between iBoot's text end and aligned text end,
