@@ -2,9 +2,9 @@
 If:
   PathMatch: [shellcode/.*\.c]
 CompileFlags:
-  Add: [-std=gnu23, -fvisibility=hidden, -fno-stack-protector, -fno-exceptions, -nostdlib, -ffreestanding, -mgeneral-regs-only, -Wall, -Wextra, -Wno-unused-includes]
+  Add: [--target=aarch64-darwin-none, -std=gnu23, -fvisibility=hidden, -fno-stack-protector, -fno-exceptions, -nostdlib, -ffreestanding, -mgeneral-regs-only, -Wall, -Wextra, -Wno-unused-includes]
 ---
 If:
   PathMatch: [src/.*\.c, patches/.*\.c]
 CompileFlags:
-  Add: [-O2, -g, -Wall, -Wextra, -Wno-unused-parameter, -Wno-unused-variable, -Wno-unused-includes]
+  Add: [-O2, -g, -Wall, -Wextra, -Wno-unused-parameter, -Wno-unused-variable, -Wno-unused-includes, -Iinclude]

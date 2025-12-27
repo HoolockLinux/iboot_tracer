@@ -2,24 +2,17 @@
 #define COMMON_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #define PAYLOAD_VARIABLES_SIZE 0x40
 
-typedef unsigned char		u_int8_t;
-typedef unsigned short		u_int16_t;
-typedef unsigned int		u_int32_t;
-typedef unsigned long long	u_int64_t;
-typedef u_int8_t              uint8_t;
-typedef u_int16_t            uint16_t;
-typedef u_int32_t            uint32_t;
-typedef u_int64_t            uint64_t;
 typedef __uint128_t uint128_t;
-typedef u_int8_t             u8;
-typedef u_int16_t            u16;
-typedef u_int32_t            u32;
-typedef u_int64_t            u64;
-typedef int s32;
-typedef long long s64;
+typedef uint8_t             u8;
+typedef uint16_t            u16;
+typedef uint32_t            u32;
+typedef uint64_t            u64;
+typedef int64_t             s64;
+typedef int32_t             s32;
 
 struct __attribute__((packed)) payload_variables {
     uint16_t payload_flags;

@@ -26,7 +26,7 @@ bool patch_exception(struct pf_patch_t *patch, uint32_t *stream) {
     }
 
     sync_panic = pf_follow_branch(iboot_buf, &adr[2]);
-    printf("%s: found arm_synchronous_exception = 0x%llx\n", __func__, iboot_ptr_to_pa(sync_panic));
+    printf("%s: found arm_synchronous_exception = 0x%" PRIx64 "\n", __func__, iboot_ptr_to_pa(sync_panic));
 
     // call our payload handler instead of arm_synchronous_exception
 

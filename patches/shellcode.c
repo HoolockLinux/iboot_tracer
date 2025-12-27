@@ -29,7 +29,7 @@ int assemble_adr(uint32_t *from, uint32_t *to, uint32_t reg, uint32_t *out) {
     uint32_t immhi = diff >> 2;
 
     out[0] = 0x10000000 | ((immlo << 29) & 0x3) | ((immhi & 0x7ffff) << 5) | reg;
-    printf("%s: adr 0x%x: 0x%llx -> 0x%llx\n", __func__, out[0], from_pa, to_pa);
+    printf("%s: adr 0x%x: 0x%" PRIx64 " -> 0x%" PRIx64 "\n", __func__, out[0], from_pa, to_pa);
     return 0;
 }
 

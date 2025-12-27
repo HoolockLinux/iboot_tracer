@@ -87,7 +87,7 @@ bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
     uint32_t *adr3_dest = adr3 + (adr_off(adr3) >> 2);
 
     if (iboot_ptr_to_pa(adr3_dest) != text_end_pa_aligned) {
-        printf("adr3_dest not match aligned text end! 0x%llx != 0x%llx (0x%" PRIx64 ")\n", iboot_ptr_to_pa(adr3_dest), text_end_pa_aligned, iboot_ptr_to_pa(adr3));
+        printf("adr3_dest not match aligned text end! 0x%" PRIx64 " != 0x%" PRIx64 " (0x%" PRIx64 ")\n", iboot_ptr_to_pa(adr3_dest), text_end_pa_aligned, iboot_ptr_to_pa(adr3));
         return false;
     }
 
@@ -102,7 +102,7 @@ bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
         if (adr4)
             data_end = adr4 + (adr_off(adr4) >> 2);
         else {
-            printf("%s: failed to find data_end xref adr3=0x%llx\n", __func__, iboot_ptr_to_pa(adr3));
+            printf("%s: failed to find data_end xref adr3=0x%" PRIx64 "\n", __func__, iboot_ptr_to_pa(adr3));
             return false;
         }
     }
