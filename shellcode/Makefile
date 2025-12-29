@@ -1,6 +1,11 @@
 OS != uname -s
+STDC_VERSION = gnu23
 ifeq ($(OS),Darwin)
 LD_FOR_TARGET != xcrun --find ld-classic
+ifeq ($(LD_FOR_TARGET),)
+LD_FOR_TARGET != xcrun --find ld
+STDC_VERSION = c17
+endif
 OTOOL = otool
 else
 LD_FOR_TARGET ?= cctools-ld
@@ -9,7 +14,7 @@ endif
 CC_FOR_TARGET ?= clang -target aarch64-darwin-none
 AS_FOR_TARGET ?= $(CC_FOR_TARGET)
 HEADERS = $(wildcard src/*.h)
-CFLAGS_FOR_TARGET ?= -std=gnu23 -fvisibility=hidden -fno-stack-protector -fno-exceptions -nostdlib -ffreestanding -mgeneral-regs-only -flto=full -Oz
+CFLAGS_FOR_TARGET ?= -std=$(STDC_VERSION) -fvisibility=hidden -fno-stack-protector -fno-exceptions -nostdlib -ffreestanding -mgeneral-regs-only -flto=full -Oz
 ASFLAGS_FOR_TARGET ?= $(CFLAGS_FOR_TARGET)
 LDFLAGS_FOR_TARGET ?= -Wl,-preload -Wl,-e,_entry -Wl,-order_file,sym_order.txt -flto=full -fvisibility=hidden --ld-path="$(LD_FOR_TARGET)"
 OBJS = payload.o entry.o uart.o

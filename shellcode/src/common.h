@@ -71,7 +71,10 @@ static const struct soc_info soc_info_table[SOC_TABLE_LEN] = {
 extern uint16_t get_chipid(void);
 extern uint16_t get_boardid(void);
 
+#if __STDC_VERSION__ >= 202311L
 static_assert(sizeof(struct payload_variables) == PAYLOAD_VARIABLES_SIZE, "Unexpected struct payload_variable size");
+#endif
+
 extern struct payload_variables* V;
 
 #define EXT(n, b) (((s32)(((u32)(n)) << (32 - (b)))) >> (32 - (b)))
