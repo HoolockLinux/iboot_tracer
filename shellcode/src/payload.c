@@ -85,13 +85,15 @@ INTERNAL static void *memset(void *s, int c, unsigned long n)
     return s;
 }
 
-INTERNAL static void flush_tlbs()
+#if defined(HAVE_FAULT_TRACE)
+INTERNAL static void flush_tlbs(void)
 {
     sysop("dsb ishst");
     sysop("tlbi vmalle1is");
     sysop("dsb ish");
     sysop("isb");
 }
+#endif
 
 INTERNAL static uint64_t virt_to_phys(uint64_t vaddr) {
     __asm__ volatile("at\tS1E1R, %0" : : "r"(vaddr) : "memory");
@@ -130,6 +132,7 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
     u64 addr = frame->far;
     u8 isWite=0, isTransFault=0;
 
+#if defined(HAVE_FAULT_TRACE)
     if(ISS_DA_FSC(esr_iss) == FSC_TRANSLATION_FAULT_L2 || ISS_DA_FSC(esr_iss) == FSC_TRANSLATION_FAULT_L3 )
     {   // traslation fault
         isWite=!(insn & BIT(22));
@@ -138,6 +141,7 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
         flush_tlbs();
     }
     else // permission fault
+#endif
         isWite=esr_iss & ISS_DA_WNR;
 
     V->payload_flags |= PAYLOAD_FLAG_ENABLE_UART;
@@ -224,11 +228,13 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
         }
         O('\n');
     }
+#if defined(HAVE_FAULT_TRACE)
     if(isTransFault)
     {
         CORRUPT_TTE(ALIGN_DOWN(addr, L2_ENTRY_SIZE));
         flush_tlbs();
     }
+#endif
     V->payload_flags |= PAYLOAD_FLAG_ENABLE_UART;
     frame->pc += 4;
     return frame;
@@ -382,13 +388,20 @@ uint64_t payload_init(uint64_t* ttbr0)
 {
     memset(V, 0, PAYLOAD_VARIABLES_SIZE);
     V->payload_flags |= PAYLOAD_FLAG_ENABLE_UART;
-    V->chipid = get_chipid();
-    
-    V->uart_base = 0x200000000 | (uint32_t)soc_info_table[V->chipid % 19].uart_addr << 14;
-    V->uart_pmgr_reg = 0x200000000 | ((uint32_t)soc_info_table[V->chipid % 19].pmgr_off & 0x7) << 17
-       | ((uint32_t)soc_info_table[V->chipid % 19].pmgr_off >> 3) << 25
-       | (uint16_t)soc_info_table[V->chipid % 19].ps_off << 3;
+    u16 index = get_chipid();
+    V->chipid = index;
 
+#if defined(HAVE_SOC_T7000)
+    if (index == 0x7000 && get_boardid() == 0x34) // Check j42d; No 0x8960
+    {
+        index -= 0x34;
+    }
+#endif
+
+    V->uart_base = 0x200000000 | (uint32_t)soc_info_table[index % SOC_TABLE_LEN].uart_addr << 14;
+    V->uart_pmgr_reg = 0x200000000 | ((uint32_t)soc_info_table[index % SOC_TABLE_LEN].pmgr_off & 0x7) << 17
+       | ((uint32_t)soc_info_table[index % SOC_TABLE_LEN].pmgr_off >> 3) << 25
+       | (uint16_t)soc_info_table[index % SOC_TABLE_LEN].ps_off << 3;
 
     if((read32(V->uart_pmgr_reg) & PMGR_PS_ACTUAL) != PMGR_PS_ACTIVE) {
         write32(V->uart_pmgr_reg, 0xa0f);
@@ -398,9 +411,11 @@ uint64_t payload_init(uint64_t* ttbr0)
     V->ttbr0 = (uint64_t)ttbr0;
 
     for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u64); i++) {
+#if defined(HAVE_FAULT_TRACE)
         if (trace_config[i] & TRACE_CONFIG_FLAG_FAULT)
             CORRUPT_TTE(FIELD_GET(TRACE_CONFIG_OAB, trace_config[i]));
         else
+#endif
             NO_UNPRIV_ACCESS_TTE(FIELD_GET(TRACE_CONFIG_OAB, trace_config[i]));
     }
 

@@ -4,7 +4,6 @@ If:
 CompileFlags:
   Add: 
     - --target=aarch64-darwin-none
-    - -xc
     - -std=gnu2x
     - -fvisibility=hidden
     - -fno-stack-protector
@@ -15,7 +14,42 @@ CompileFlags:
     - -Wall
     - -Wextra
     - -Wno-unused-includes
+    - -DHAVE_FAULT_TRACE
     - -Oz
+
+---
+If:
+  PathMatch: [src/.*\.c, patches/.*\.c]
+CompileFlags:
+  Add:
+    - -O2
+    - -g
+    - -Wall
+    - -Wextra
+    - -Wno-unused-parameter
+    - -Wno-unused-variable
+    - -Wno-unused-includes
+    - -I../include
+    - -I../plooshfinder/include
+
+---
+If:
+  PathMatch: [.*\.h]
+CompileFlags:
+  Add:
+    - -xc-header
+    - -std=c2x
+    - -Wall
+    - -Wextra
+    - -Wno-unused-function
+    - -Werror=implicit-function-declaration
+
+---
+CompileFlags:
+  Add:
+    - -DHAVE_SOC_S5L8960X
+    - -DHAVE_SOC_T7000
+    - -DHAVE_SOC_T7001
     - -DHAVE_SOC_S8000
     - -DHAVE_SOC_S8001
     - -DHAVE_SOC_S8003
@@ -23,9 +57,3 @@ CompileFlags:
     - -DHAVE_SOC_T8011
     - -DHAVE_SOC_T8012
     - -DHAVE_SOC_T8015
-
----
-If:
-  PathMatch: [src/.*\.c, patches/.*\.c]
-CompileFlags:
-  Add: [-O2, -g, -Wall, -Wextra, -Wno-unused-parameter, -Wno-unused-variable, -Wno-unused-includes, -Iinclude]

@@ -57,6 +57,9 @@ int shellcode_patch(void)
 
     shc[10] = insn;
 
+    shc[9] = arm64_branch(&shc[9], get_boardid, false);
+    printf("%s: payload's get_boardid() to iboot's get_boardid(): 0x%" PRIx64 " -> 0x%" PRIx64 "\n", __func__, iboot_ptr_to_pa(&shc[9]), iboot_ptr_to_pa(get_boardid));
+
     shc[12] = arm64_branch(&shc[12], get_chipid, false);
     printf("%s: payload's get_chipid() to iboot's get_chipid(): 0x%" PRIx64 " -> 0x%" PRIx64 "\n", __func__, iboot_ptr_to_pa(&shc[12]), iboot_ptr_to_pa(get_chipid));
 

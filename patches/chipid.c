@@ -11,26 +11,29 @@
 
 int32_t adr_off(uint32_t* insn);
 
-uint8_t *get_chipid;
+uint8_t *get_chipid, *get_boardid;
 
 bool patch_chipid(struct pf_patch_t *patch, uint32_t *stream) {
     char *str = ((char*)stream + (adr_off(stream)));
-    if (strcmp(str, "chip-id"))
-        return false;
+    if (strcmp(str, "chip-id") == 0) {
+        get_chipid = (uint8_t*)pf_follow_branch(iboot_buf, &stream[4]);
 
-    get_chipid = (uint8_t*)pf_follow_branch(iboot_buf, &stream[4]);
+        printf("%s: found chipid = %" PRIx64 "\n", __func__, iboot_ptr_to_pa(get_chipid));
+    } else if (strcmp(str, "board-id") == 0) {
+        get_boardid = (uint8_t*)pf_follow_branch(iboot_buf, &stream[4]);
 
-    printf("%s: found chipid = %" PRIx64 "\n", __func__, iboot_ptr_to_pa(get_chipid));
+        printf("%s: found boardid = %" PRIx64 "\n", __func__, iboot_ptr_to_pa(get_boardid));
+    }
     return true;
 }
 
 void chipid_patch(void) {
     uint32_t chipid_matches[] = {
-        0x10000008, // adr x8, "chip-id"
+        0x10000008, // adr x8, "chip-id" / "board-id"
         0xd503201f, // nop
         0x94000000, // bl
         0x34000000, // cbz w0, ...
-        0x94000000, // bl get_chipid
+        0x94000000, // bl get_chipid / get_boardid
     };
 
     uint32_t chipid_masks[] = {

@@ -9,3 +9,4 @@ tools/vmacho
 payload.bin.c
 .DS_Store
 shellcode/src/trace_config.h
+.irecovery

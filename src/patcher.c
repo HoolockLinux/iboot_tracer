@@ -81,6 +81,11 @@ int patch_iboot(void) {
         return -1;
     }
 
+    if (!get_boardid) {
+        printf("could not find get_boardid() function\n");
+        return -1;
+    }
+
     shellcode_patch();
 
     return 0;

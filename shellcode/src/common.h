@@ -7,6 +7,7 @@
 #include "soc.h"
 
 #define PAYLOAD_VARIABLES_SIZE 0x40
+#define SOC_TABLE_LEN   19
 
 typedef __uint128_t uint128_t;
 typedef uint8_t             u8;
@@ -33,21 +34,42 @@ struct __attribute__((packed)) soc_info {
 };
 
 // this is unreadable i know but this also the most space-efficient...
-static const struct soc_info soc_info_table[] = {
+static const struct soc_info soc_info_table[SOC_TABLE_LEN] = {
+#if defined(HAVE_SOC_S5L8960X)
     [18] = {10280, 23, 57}, // 0x8960
+#endif
+#if defined(HAVE_SOC_T7000)
     [1]  = {10288, 52, 57}, // 0x7000
-    [6]  = {10294, 58, 57}, // 0x7000 - 0x34 J42d (TODO)
+    [6]  = {10294, 58, 57}, // 0x7000 - 0x34 J42d
+#endif
+#if defined(HAVE_SOC_T7001)
     [2]  = {10288, 52, 57}, // 0x7001
+#endif
+#if defined(HAVE_SOC_S8000)
     [12] = {10288, 59, 60}, // 0x8000
+#endif
+#if defined(HAVE_SOC_S8001)
     [13] = {10288, 58, 60}, // 0x8001
+#endif
+#if defined(HAVE_SOC_S8003)
     [15] = {10288, 59, 60}, // 0x8003
+#endif
+#if defined(HAVE_SOC_T8010)
     [9]  = {10288, 61, 60}, // 0x8010
+#endif
+#if defined(HAVE_SOC_T8011)
     [10] = {10288, 60, 60}, // 0x8011
+#endif
+#if defined(HAVE_SOC_T8012)
     [11] = {10624, 64, 60}, // 0x8012
+#endif
+#if defined(HAVE_SOC_T8015)
     [14] = {47488, 61, 204}, // 0x8015
+#endif
 };
 
 extern uint16_t get_chipid(void);
+extern uint16_t get_boardid(void);
 
 static_assert(sizeof(struct payload_variables) == PAYLOAD_VARIABLES_SIZE, "Unexpected struct payload_variable size");
 extern struct payload_variables* V;

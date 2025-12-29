@@ -2,6 +2,7 @@
 .global _entry
 .globl _V
 .globl _get_chipid
+.globl _get_boardid
 .balign 16
 
 #define ESR_EC_DABORT_EL0 0x24
@@ -19,7 +20,9 @@ _entry:
 
     adr lr, #0 // gets patched by patcher to DATA_ABORT_PANIC_CALL
     ret
-    nop
+
+_get_boardid:
+    b . // patched to iboot's get_boardid function
 
 custom_handler:
     adr lr, #0 // gets patched by patcher to EXCEPTION_EL1_ERET
