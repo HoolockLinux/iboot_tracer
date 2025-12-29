@@ -17,7 +17,7 @@ static const u64 trace_config[] = {};
 #define ALIGN_UP(x, a)   (((x) + ((a) - 1)) & ~((a) - 1))
 #define ALIGN_DOWN(x, a) ((x) & ~((a) - 1))
 #define L2_ENTRY_SIZE 0x2000000
-#define L2_TTE(addr) (V->ttbr0 + (addr / L2_ENTRY_SIZE)*sizeof(uint64_t))
+#define L2_TTE(addr) (V->l2_base + (addr / L2_ENTRY_SIZE)*sizeof(uint64_t))
 #define CORRUPT_TTE(addr) clear64((uint64_t)L2_TTE(addr), PTE_VALID)
 #define FIX_TTE(addr) set64((uint64_t)L2_TTE(addr), PTE_VALID)
 // this works because most of iboot runs in EL0
@@ -408,7 +408,11 @@ uint64_t payload_init(uint64_t* ttbr0)
         uart_init();
     }
 
-    V->ttbr0 = (uint64_t)ttbr0;
+    V->l2_base = (uint64_t)ttbr0;
+#if defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
+    if ((uint64_t)ttbr0 & 0x800000000)
+        V->l2_base += 0x4000; /* iBootStage2 uses L1 */
+#endif
 
     for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u64); i++) {
 #if defined(HAVE_FAULT_TRACE)

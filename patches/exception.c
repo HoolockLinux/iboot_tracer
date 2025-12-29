@@ -32,7 +32,7 @@ bool patch_exception(struct pf_patch_t *patch, uint32_t *stream) {
 
     adr[1] = 0xa8c17bfd; // ldp x29, x30, [sp], #0x10
     adr[2] = arm64_branch(&adr[2], payload_buf, false);
-    printf("%s: iboot's arm_synchronous_exception() to payload's payload_init(): 0x%" PRIx64 " -> 0x%" PRIx64"\n", __func__, iboot_ptr_to_pa(&adr[2]), iboot_ptr_to_pa(payload_buf));
+    printf("%s: iboot's arm_synchronous_exception() to payload's entry(): 0x%" PRIx64 " -> 0x%" PRIx64"\n", __func__, iboot_ptr_to_pa(&adr[2]), iboot_ptr_to_pa(payload_buf));
 
     return true;
 }

@@ -21,7 +21,7 @@ struct __attribute__((packed)) payload_variables {
     uint16_t payload_flags;
     uint16_t chipid;
     uint32_t reserved1;
-    uint64_t ttbr0;
+    uint64_t l2_base;
     uint64_t uart_pmgr_reg;
     uint64_t uart_base;
     char reserved[0x20];
