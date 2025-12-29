@@ -4,6 +4,7 @@ If:
 CompileFlags:
   Add: 
     - --target=aarch64-darwin-none
+    - -xc
     - -std=gnu2x
     - -fvisibility=hidden
     - -fno-stack-protector

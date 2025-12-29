@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "soc.h"
+
 #define PAYLOAD_VARIABLES_SIZE 0x40
 
 typedef __uint128_t uint128_t;
@@ -22,6 +24,26 @@ struct __attribute__((packed)) payload_variables {
     uint64_t uart_pmgr_reg;
     uint64_t uart_base;
     char reserved[0x20];
+};
+
+struct __attribute__((packed)) soc_info {
+    uint16_t uart_addr;
+    uint8_t ps_off;
+    uint8_t pmgr_off;
+};
+
+// this is unreadable i know but this also the most space-efficient...
+static const struct soc_info soc_info_table[] = {
+    [18] = {10280, 23, 57}, // 0x8960
+    [1]  = {10288, 52, 57}, // 0x7000
+    [2]  = {10288, 52, 57}, // 0x7001
+    [12] = {10288, 59, 60}, // 0x8000
+    [13] = {10288, 58, 60}, // 0x8001
+    [15] = {10288, 59, 60}, // 0x8003
+    [9]  = {10288, 61, 60}, // 0x8010
+    [10] = {10288, 60, 60}, // 0x8011
+    [11] = {10624, 64, 60}, // 0x8012
+    [14] = {47488, 61, 204}, // 0x8015
 };
 
 extern uint16_t get_chipid(void);
@@ -44,7 +66,9 @@ extern struct payload_variables* V;
 #define FIELD_GET(field, val)  (((val) & (field)) / _FIELD_LSB(field))
 
 #define PAYLOAD_FLAG_ENABLE_UART    BIT(0)
+#ifndef INTERNAL
 #define INTERNAL __attribute__((visibility("internal")))
+#endif
 
 #define PTE_VALID           BIT(0)
 #define PTE_UNPRIV_ACCESS   BIT(6)

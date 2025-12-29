@@ -14,7 +14,7 @@ ASFLAGS_FOR_TARGET ?= $(CFLAGS_FOR_TARGET)
 LDFLAGS_FOR_TARGET ?= -Wl,-preload -Wl,-e,_entry -Wl,-order_file,sym_order.txt -flto=full -fvisibility=hidden --ld-path="$(LD_FOR_TARGET)"
 OBJS = payload.o entry.o uart.o
 
-PAYLOAD_SUPPORTED_SOCS ?= S8000 S8001 S8003 T8010 T8011 T8012 T8015
+PAYLOAD_SUPPORTED_SOCS ?= S5L8960X T7000 T7001 S8000 S8001 S8003 T8010 T8011 T8012 T8015
 
 CFLAGS_FOR_TARGET += $(patsubst %,-DHAVE_SOC_%,$(PAYLOAD_SUPPORTED_SOCS))
 
@@ -40,7 +40,7 @@ payload.macho: $(patsubst %.o,$(OBJDIR)/shellcode/%.o, $(OBJS))
 	./checkPayload.sh $@
 
 payload.bin: payload.macho
-	../tools/vmacho -fM 0x2000 $^ $@
+	../tools/vmacho -fM 0xc00 $^ $@ # Consider 4K devices
 
 payload.bin.c: payload.bin
 	echo '#include <stdint.h>' > $@

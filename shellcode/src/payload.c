@@ -66,12 +66,13 @@ static int emulate_load(struct arm_exception_frame64 *ctx, u32 insn, u64 far_add
 #define PMGR_PS_ACTUAL  0xf0
 #define PMGR_PS_ACTIVE  0xf
 
-void uart_init();
+void uart_init(void);
 void uart_putchar(u8 c);
 void uart_put64(u64 num);
 #define O(c) uart_putchar(c);
 
-#define panic(c) { O('P'); O(':'); O(c); while(1);}
+INTERNAL static __attribute__((noreturn))
+void panic(u8 c) { O('P'); O(':'); O(c); while(1); }
 
 INTERNAL static void *memset(void *s, int c, unsigned long n)
 {
@@ -382,40 +383,18 @@ uint64_t payload_init(uint64_t* ttbr0)
     memset(V, 0, PAYLOAD_VARIABLES_SIZE);
     V->payload_flags |= PAYLOAD_FLAG_ENABLE_UART;
     V->chipid = get_chipid();
-    switch (V->chipid) {
-#if defined(HAVE_SOC_T8010)
-        case 0x8010:
-            V->uart_base = UART_BASE_T8010;
-            V->uart_pmgr_reg = UART_PMGR_REGISTER_T8010;
-            break;
-#endif
-#if defined(HAVE_SOC_T8011)
-        case 0x8011:
-            V->uart_base = UART_BASE_T8011;
-            V->uart_pmgr_reg = UART_PMGR_REGISTER_T8011;
-            break;
-#endif
-#if defined(HAVE_SOC_T8012)
-        case 0x8012:
-            V->uart_base = UART_BASE_T8012;
-            V->uart_pmgr_reg = UART_PMGR_REGISTER_T8012;
-            break;
-#endif
-#if defined(HAVE_SOC_T8015)
-        case 0x8015:
-            V->uart_base = UART_BASE_T8015;
-            V->uart_pmgr_reg = UART_PMGR_REGISTER_T8015;
-            break;
-#endif
-        default:
-            while (1);
-    }
+    
+    V->uart_base = 0x200000000 | (uint32_t)soc_info_table[V->chipid % 19].uart_addr << 14;
+    V->uart_pmgr_reg = 0x200000000 | ((uint32_t)soc_info_table[V->chipid % 19].pmgr_off & 0x7) << 17
+       | ((uint32_t)soc_info_table[V->chipid % 19].pmgr_off >> 3) << 25
+       | (uint16_t)soc_info_table[V->chipid % 19].ps_off << 3;
+
 
     if((read32(V->uart_pmgr_reg) & PMGR_PS_ACTUAL) != PMGR_PS_ACTIVE) {
         write32(V->uart_pmgr_reg, 0xa0f);
         uart_init();
     }
-    
+
     V->ttbr0 = (uint64_t)ttbr0;
 
     for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u64); i++) {

@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "../common.h"
 
 #define UART_BASE_T8012 0x20a600000
 #define UART_PMGR_REGISTER_T8012 0x20e080200
 
+#define INTERNAL __attribute__((visibility("internal")))
 INTERNAL static bool address_is_blacklisted_t8012(uint64_t addr)
 {
     // need to be like this because we are misaligned
