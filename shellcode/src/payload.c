@@ -142,12 +142,16 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
     V->payload_flags |= PAYLOAD_FLAG_ENABLE_UART;
     bool blacklisted = false;
     switch (V->chipid) {
+#if defined(HAVE_SOC_T8012)
         case 0x8012:
             blacklisted = address_is_blacklisted_t8012(addr);
             break;
+#endif
+#if defined(HAVE_SOC_T8015)
         case 0x8015:
             blacklisted = address_is_blacklisted_t8015(addr);
             break;
+#endif
         default:
             break;
     }
@@ -379,22 +383,30 @@ uint64_t payload_init(uint64_t* ttbr0)
     V->payload_flags |= PAYLOAD_FLAG_ENABLE_UART;
     V->chipid = get_chipid();
     switch (V->chipid) {
+#if defined(HAVE_SOC_T8010)
         case 0x8010:
             V->uart_base = UART_BASE_T8010;
             V->uart_pmgr_reg = UART_PMGR_REGISTER_T8010;
             break;
+#endif
+#if defined(HAVE_SOC_T8011)
         case 0x8011:
             V->uart_base = UART_BASE_T8011;
             V->uart_pmgr_reg = UART_PMGR_REGISTER_T8011;
             break;
+#endif
+#if defined(HAVE_SOC_T8012)
         case 0x8012:
             V->uart_base = UART_BASE_T8012;
             V->uart_pmgr_reg = UART_PMGR_REGISTER_T8012;
             break;
+#endif
+#if defined(HAVE_SOC_T8015)
         case 0x8015:
             V->uart_base = UART_BASE_T8015;
             V->uart_pmgr_reg = UART_PMGR_REGISTER_T8015;
             break;
+#endif
         default:
             while (1);
     }
