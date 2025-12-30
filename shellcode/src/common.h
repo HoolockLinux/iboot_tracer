@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "soc.h"
-
 #define PAYLOAD_VARIABLES_SIZE 0x40
 #define SOC_TABLE_LEN   19
 
@@ -31,6 +29,11 @@ struct __attribute__((packed)) soc_info {
     uint16_t uart_addr;
     uint8_t ps_off;
     uint8_t pmgr_off;
+};
+
+struct __attribute__((packed)) whitelist_range {
+    uint32_t addr_35_4;
+    uint32_t size;
 };
 
 // this is unreadable i know but this also the most space-efficient...
@@ -100,9 +103,10 @@ extern struct payload_variables* V;
 #define PTE_UNPRIV_ACCESS   BIT(6)
 
 /* Trace with TransFault (slow) instead of No-UnPriv-Access (fast) */
-#define TRACE_CONFIG_FLAG_FAULT BIT(62)
+#define TRACE_CONFIG_FLAG_FAULT BIT(0)
 /* Output address block */
-#define TRACE_CONFIG_OAB        GENMASK(47, 0) // 25
+// bit [35:25]
+#define TRACE_CONFIG_OAB        GENMASK(15, 5) // 25
 
 static u8 read8(u64 addr)
 {

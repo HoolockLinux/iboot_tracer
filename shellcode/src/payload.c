@@ -1,11 +1,11 @@
 #include "common.h"
-#include "soc.h"
 #include <stddef.h>
 
 #if __has_include("trace_config.h")
 #include "trace_config.h"
 #else
 static const u64 trace_config[] = {};
+static const u64 addr_whitelist[] = {};
 #endif
 
 /*
@@ -130,13 +130,13 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
 	u64 val[2]={0,0};
 	u32 insn = read32(frame->pc);
     u64 addr = frame->far;
-    u8 isWite=0, isTransFault=0;
+    bool isWite=false, isTransFault=false;
 
 #if defined(HAVE_FAULT_TRACE)
     if(ISS_DA_FSC(esr_iss) == FSC_TRANSLATION_FAULT_L2 || ISS_DA_FSC(esr_iss) == FSC_TRANSLATION_FAULT_L3 )
     {   // traslation fault
         isWite=!(insn & BIT(22));
-        isTransFault=1;
+        isTransFault=true;
         FIX_TTE(ALIGN_DOWN(addr, L2_ENTRY_SIZE));
         flush_tlbs();
     }
@@ -144,27 +144,16 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
 #endif
         isWite=esr_iss & ISS_DA_WNR;
 
-    V->payload_flags |= PAYLOAD_FLAG_ENABLE_UART;
-    bool blacklisted = false;
-    switch (V->chipid) {
-#if defined(HAVE_SOC_T8012)
-        case 0x8012:
-            blacklisted = address_is_blacklisted_t8012(addr);
-            break;
-#endif
-#if defined(HAVE_SOC_T8015)
-        case 0x8015:
-            blacklisted = address_is_blacklisted_t8015(addr);
-            break;
-#endif
-        default:
-            break;
+    bool whitelist = false;
+
+    for (uint8_t i = 0; i < sizeof(whitelist_addr)/sizeof(struct whitelist_range); i++) {
+        uint64_t start = (uint64_t)whitelist_addr[i].addr_35_4 << 4;
+        uint64_t end = start + whitelist_addr[i].size;
+        if (addr >= start && addr < end)
+            whitelist = true;
     }
 
-    if (addr == V->uart_pmgr_reg || (addr > V->uart_base && addr < (V->uart_base + 0x1000)))
-        blacklisted = true;
-
-    if (blacklisted)
+    if (!whitelist)
         V->payload_flags &= ~PAYLOAD_FLAG_ENABLE_UART;
 
     if(!isWite)
@@ -414,13 +403,14 @@ uint64_t payload_init(uint64_t* ttbr0)
         V->l2_base += 0x4000; /* iBootStage2 uses L1 */
 #endif
 
-    for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u64); i++) {
+    for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u16); i++) {
+        uint64_t addr = FIELD_GET(TRACE_CONFIG_OAB, trace_config[i]) << 25;
 #if defined(HAVE_FAULT_TRACE)
         if (trace_config[i] & TRACE_CONFIG_FLAG_FAULT)
-            CORRUPT_TTE(FIELD_GET(TRACE_CONFIG_OAB, trace_config[i]));
+            CORRUPT_TTE(addr);
         else
 #endif
-            NO_UNPRIV_ACCESS_TTE(FIELD_GET(TRACE_CONFIG_OAB, trace_config[i]));
+            NO_UNPRIV_ACCESS_TTE(addr);
     }
 
     __builtin_arm_wsr64("ttbr0_el1", (uint64_t)ttbr0);

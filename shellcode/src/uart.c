@@ -1,4 +1,3 @@
-#include "soc.h"
 #include "common.h"
 
 #define ULCON    0x000
