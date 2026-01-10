@@ -119,8 +119,8 @@ example:
 
 ibootpatch3 is licensed under the MIT license, as included in the [LICENSE](./LICENSE) file.
 
-The load-store emulator is taken from [m1n1](https://github.com/AsahiLinux/m1n1),
-which is also licened under the MIT license.
+The load-store emulator and parts of the python scripts in `parsers` are taken from
+[m1n1](https://github.com/AsahiLinux/m1n1), which is licened under the MIT license.
 
 - Copyright The Asahi Linux Contributors
 

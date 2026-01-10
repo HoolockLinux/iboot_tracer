@@ -10,3 +10,7 @@ payload.bin.c
 .DS_Store
 shellcode/src/trace_config.h
 .irecovery
+.venv
+*.txt
+*.log
+__pycache__
