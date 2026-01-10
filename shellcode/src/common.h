@@ -99,6 +99,9 @@ extern struct payload_variables* V;
 #define FIELD_PREP(field, val) (((val) * (_FIELD_LSB(field))) & (field))
 #define FIELD_GET(field, val)  (((val) & (field)) / _FIELD_LSB(field))
 
+#define ALIGN_UP(x, a)   (((x) + ((a) - 1)) & ~((a) - 1))
+#define ALIGN_DOWN(x, a) ((x) & ~((a) - 1))
+
 #define PAYLOAD_FLAG_ENABLE_UART    BIT(0)
 #ifndef INTERNAL
 #define INTERNAL __attribute__((visibility("internal")))

@@ -14,8 +14,6 @@ static const u64 addr_whitelist[] = {};
  * cannot use va arg for some reason
  */ 
 
-#define ALIGN_UP(x, a)   (((x) + ((a) - 1)) & ~((a) - 1))
-#define ALIGN_DOWN(x, a) ((x) & ~((a) - 1))
 #define L2_ENTRY_SIZE 0x2000000
 #define L2_TTE(addr) (V->l2_base + (addr / L2_ENTRY_SIZE)*sizeof(uint64_t))
 #define CORRUPT_TTE(addr) clear64((uint64_t)L2_TTE(addr), PTE_VALID)
