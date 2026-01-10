@@ -22,7 +22,8 @@ struct __attribute__((packed)) payload_variables {
     uint64_t l2_base;
     uint64_t uart_pmgr_reg;
     uint64_t uart_base;
-    char reserved[0x20];
+    uint64_t trace_hook_var[2];
+    char reserved[0x10];
 };
 
 struct __attribute__((packed)) soc_info {
@@ -35,6 +36,10 @@ struct __attribute__((packed)) whitelist_range {
     uint32_t addr_35_4;
     uint32_t size;
 };
+
+void uart_init(void);
+void uart_putchar(u8 c);
+void uart_put64(u64 num);
 
 // this is unreadable i know but this also the most space-efficient...
 static const struct soc_info soc_info_table[SOC_TABLE_LEN] = {

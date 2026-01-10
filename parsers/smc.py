@@ -96,15 +96,30 @@ def smc_i2a(asc: ASCParser, rel_ep: int, val_lo: int, val_hi: int):
     smcr = SMCResult(val_lo)
     asc.print(f"SMC result: {smcr}")
 
+REGEX_M = "^M:((?:[0-9]|[a-f])+)$"
+
+def parse_smc_trace_hook(line: str) -> str:
+    match = re.search(REGEX_M, line)
+    if match is None:
+        return line
+    return f"trace(smc): SHMEM: 0x{match[1]}"
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         exit(-1)
     f = open(sys.argv[1], 'r')
     s = f.read()
     lines = s.split('\n')
+    access_lines = []
     parsed_lines = []
     for line in lines:
-        parsed_lines.append(parse_line(line))
+        access_lines.append(parse_line(line))
+
+    for line in access_lines:
+        if type(line) is str:
+            parsed_lines.append(parse_smc_trace_hook(line))
+        else:
+            parsed_lines.append(line)
 
     asc = ASCParser(addr=SMC_MBOX, name="trace(smc)", app_ep_a2i=smc_a2i, app_ep_i2a=smc_i2a)
 

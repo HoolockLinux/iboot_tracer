@@ -66,9 +66,6 @@ static int emulate_load(struct arm_exception_frame64 *ctx, u32 insn, u64 far_add
 #define PMGR_PS_ACTUAL  0xf0
 #define PMGR_PS_ACTIVE  0xf
 
-void uart_init(void);
-void uart_putchar(u8 c);
-void uart_put64(u64 num);
 #define O(c) uart_putchar(c);
 
 INTERNAL static __attribute__((noreturn))
@@ -217,6 +214,10 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
         }
         O('\n');
     }
+#if defined(HAVE_TRACE_HOOK)
+    if (whitelist)
+        trace_hook(addr, isWite, width, val);
+#endif
 #if defined(HAVE_FAULT_TRACE)
     if(isTransFault)
     {
