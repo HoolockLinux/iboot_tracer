@@ -89,8 +89,7 @@ static void trace_hook(uint64_t vaddr, bool isWrite, uint64_t width, uint64_t *v
             return;
     }
 
-    if (V->trace_hook_var[0])
-        read_mem((volatile uint32_t*)V->trace_hook_var[0], size / 4);
+    read_mem((volatile uint32_t*)V->trace_hook_var[0], (ALIGN_UP(size, 4)) / 4);
 }
 
 #endif
