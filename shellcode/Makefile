@@ -48,7 +48,7 @@ payload.macho: $(patsubst %.o,$(OBJDIR)/shellcode/%.o, $(OBJS))
 	./checkPayload.sh $@
 
 payload.bin: payload.macho
-	../tools/vmacho -fM 0xc00 $^ $@ # Consider 4K devices
+	../tools/vmacho -fM 0x1000 $^ $@ # Consider 4K devices
 
 payload.bin.c: payload.bin
 	echo '#include <stdint.h>' > $@
