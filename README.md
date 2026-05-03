@@ -117,6 +117,11 @@ example:
 - the value `0x10560000000020` is read from the upper 8 bytes
 - the size of the access is `1 << 4` = 16 bytes
 
+## Parsers
+
+There are some parsers in the `parsers` directory. Check its [README](./parsers/README.md)
+for more information.
+
 ## License
 
 ibootpatch3 is licensed under the MIT license, as included in the [LICENSE](./LICENSE) file.
