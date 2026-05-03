@@ -1,8 +1,8 @@
 # iBoot Tracer
 
 Hack iBoot data abort handler and corrupt its pagetables
-to trace its MMIO access. Supports T8010, T8011, T8012,
-T8015 and is designed for iOS 15 iBoots.
+to trace its MMIO access. Supports S8000, S8001, S8003,
+T8010, T8011, T8012, T8015 and is designed for iOS 15 iBoots.
 
 ## Building
 
@@ -20,6 +20,8 @@ You can override them with `LD_FOR_TARGET` and `OTOOL` variables.
 The code is placed between iBoot's text end and aligned text end,
 so iBoot must itself be sufficiently misaligned for the code to work.
 At least one of 15.0 or 15.4 iBoots should work.
+
+On S8000, S8001, S8003, only Stage 2 iBoot is supported.
 
 ## Tracing
 
