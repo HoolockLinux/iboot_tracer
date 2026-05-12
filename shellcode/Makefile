@@ -20,7 +20,7 @@ LDFLAGS_FOR_TARGET ?= -Wl,-preload -Wl,-e,_entry -Wl,-order_file,sym_order.txt -
 OBJS = payload.o entry.o uart.o
 
 PAYLOAD_SUPPORTED_SOCS ?= S5L8960X T7000 T7001 S8000 S8001 S8003 T8010 T8011 T8012 T8015
-ifneq ($(HAVE_FAULT_TRACE),0)
+ifeq ($(HAVE_FAULT_TRACE),1)
 CFLAGS_FOR_TARGET += -DHAVE_FAULT_TRACE
 endif
 
