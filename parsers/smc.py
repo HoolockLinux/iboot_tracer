@@ -2,9 +2,7 @@ from parse import *
 from asc import *
 from construct import Adapter, Int64ul, Int32ul, Int16ul, Int8ul, ExprAdapter, GreedyRange, ListContainer, StopFieldError, ExplicitError, StreamError
 
-
-SMC_MBOX = 0x236808000
-SMC_CPU_CONTROL = 0x236000100
+# ASMI seems to be for passing data between SMC and ANS2 with AP in between
 
 class SMCMessageTypes:
     SMC_READ_KEY           = 0x10
@@ -61,8 +59,14 @@ def str_4cc(cc4: int):
     pass
 
 def smc_a2i(asc: ASCParser, rel_ep: int, val_lo: int, val_hi: int):
-    if rel_ep != 0:
-        asc.print(f"message sent to unkown rel app endpoint {rel_ep}")
+    if rel_ep == 0:
+        pass
+    elif rel_ep == 1:
+        asc.print(f"sending ASMI ANS2->SMC Message: {hex(val_lo)}")
+        return
+    else:
+        asc.print(f"message lo={hex(val_lo)} sent to unkown rel app endpoint {rel_ep}")
+        return
 
     smsg = SMCMessage(val_lo)
     match smsg.TYPE:
@@ -90,8 +94,14 @@ def smc_a2i(asc: ASCParser, rel_ep: int, val_lo: int, val_hi: int):
             asc.print(f"Unknown SMC Message: {smsg}")
 
 def smc_i2a(asc: ASCParser, rel_ep: int, val_lo: int, val_hi: int):
-    if rel_ep != 0:
-        asc.print(f"message received from unkown rel app endpoint {rel_ep}")
+    if rel_ep == 0:
+        pass
+    elif rel_ep == 1:
+        asc.print(f"received ASMI SMC->ANS2 Message: {hex(val_lo)}")
+        return
+    else:
+        asc.print(f"message lo={hex(val_lo)} received from unkown rel app endpoint {rel_ep}")
+        return
 
     smcr = SMCResult(val_lo)
     asc.print(f"SMC result: {smcr}")
@@ -104,11 +114,26 @@ def parse_smc_trace_hook(line: str) -> str:
         return line
     return f"trace(smc): SHMEM: 0x{match[1]}"
 
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} /path/to/trace_log.txt <0x8012|0x8015>")
+        print(f"T2 is 0x8012 and A11 is 0x8015")
         exit(-1)
     f = open(sys.argv[1], 'r')
     s = f.read()
+    chip_id = int(sys.argv[2], 16)
+
+    SMC_MBOX = None
+    if chip_id == 0x8015:
+        SMC_MBOX = 0x236808000
+    elif chip_id == 0x8012:
+        SMC_MBOX = 0x212808000
+    else:
+        print("Unsupported chip")
+        exit(-1)
+
     lines = s.split('\n')
     access_lines = []
     parsed_lines = []
