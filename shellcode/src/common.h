@@ -41,6 +41,7 @@ void uart_init(void);
 void uart_putchar(u8 c);
 void uart_put64(u64 num);
 
+#if !defined(HAVE_DOCKCHANNEL)
 // this is unreadable i know but this also the most space-efficient...
 static const struct soc_info soc_info_table[SOC_TABLE_LEN] = {
 #if defined(HAVE_SOC_S5L8960X)
@@ -75,6 +76,7 @@ static const struct soc_info soc_info_table[SOC_TABLE_LEN] = {
     [14] = {47488, 61, 204}, // 0x8015
 #endif
 };
+#endif
 
 extern uint16_t get_chipid(void);
 extern uint16_t get_boardid(void);

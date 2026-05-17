@@ -379,6 +379,14 @@ uint64_t payload_init(uint64_t* ttbr0)
     u16 index = get_chipid();
     V->chipid = index;
 
+#if defined(HAVE_DOCKCHANNEL)
+    if (V->chipid == 0x8011)
+        V->uart_base = 0x21062c000;
+    else if (V->chipid == 0x8012)
+        V->uart_base = 0x21112c000;
+    else
+        __asm__("brk 3");
+#else
 #if defined(HAVE_SOC_T7000)
     if (index == 0x7000 && get_boardid() == 0x34) // Check j42d; No 0x8960
     {
@@ -395,6 +403,7 @@ uint64_t payload_init(uint64_t* ttbr0)
         write32(V->uart_pmgr_reg, 0xa0f);
         uart_init();
     }
+#endif
 
     V->l2_base = (uint64_t)ttbr0;
 #if defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)

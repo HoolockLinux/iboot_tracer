@@ -1,5 +1,28 @@
 #include "common.h"
 
+#if defined(HAVE_DOCKCHANNEL)
+
+#define DATA_TX8      0x4
+#define DATA_TX_FREE  0x14
+
+void uart_init(void) {}
+
+INTERNAL static void uart_putbyte(u8 c)
+{
+    if (!V->uart_base)
+        return;
+
+    if (!(V->payload_flags & PAYLOAD_FLAG_ENABLE_UART))
+        return;
+
+    while (read32(V->uart_base + DATA_TX_FREE) == 0)
+        ;
+
+    write32(V->uart_base + DATA_TX8, c);
+}
+
+
+#else
 #define ULCON    0x000
 #define UCON     0x004
 #define UFCON    0x008
@@ -35,6 +58,7 @@ INTERNAL static void uart_putbyte(u8 c)
 
     write32(V->uart_base  + UTXH, c);
 }
+#endif
 
 void uart_putchar(u8 c)
 {
