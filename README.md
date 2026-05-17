@@ -15,6 +15,24 @@ On Linux, building is supported with [cctools-port](https://github.com/tpoechtra
 The makefiles assume that the tools are prefixed with `cctools-`.
 You can override them with `LD_FOR_TARGET` and `OTOOL` variables.
 
+### Build Options
+
+All options are specified as arguments to make.
+
+#### `HAVE_FAULT_TRACE=1`
+
+Support tracing via corrupted TTE as described in the tracing section.
+
+#### `HAVE_DOCKCHANNEL=1`
+
+Output via dockchannel instead of S5L UART on A10X and T2.
+This is especially preferrable for T2 users since on these
+devices the S5L uart is not exported to USB port, but dockchannel
+is (still require special cables).
+
+This is incompatible with other SoCs and will make the payload
+fail to boot on them.
+
 ## iBoot selection
 
 The code is placed between iBoot's text end and aligned text end,
@@ -31,7 +49,7 @@ size.
 
 Use `TRACE_CONFIG_FLAG_FAULT` to trace with translation fault (slow),
 otherwise tracer will use no-unprivileged-access to trace (only works
-for EL0).
+for EL0, sufficient for most purposes).
 
 Since L2 entry size is quite large, you must specify a whitelist of
 addresses that will actually be traced.
