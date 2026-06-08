@@ -1,18 +1,19 @@
 #include "common.h"
 #include <stddef.h>
+#include <stdbool.h>
 
 #if __has_include("trace_config.h")
 #include "trace_config.h"
 #else
-static const u64 trace_config[] = {};
-static const u64 addr_whitelist[] = {};
+static const u16 trace_config[] = {};
+static const struct whitelist_range whitelist_addr[] = {};
 #endif
 
 /*
  * Payload CANNOT have any global variables
  * Only functions allowed in global context
  * cannot use va arg for some reason
- */ 
+ */
 
 #define L2_ENTRY_SIZE 0x2000000
 #define L2_TTE(addr) (V->l2_base + (addr / L2_ENTRY_SIZE)*sizeof(uint64_t))
@@ -25,9 +26,9 @@ struct arm_exception_frame64 {
 	uint64_t	regs[29];	// x0-x28
 	uint64_t	fp;
 	uint64_t	lr;
-	uint64_t	sp;		
+	uint64_t	sp;
 	uint32_t	spsr;
-	uint32_t	reserved0;		
+	uint32_t	reserved0;
 	uint64_t	pc;
 	uint64_t	far;
 	uint32_t	esr;
