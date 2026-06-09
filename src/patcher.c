@@ -45,6 +45,18 @@ int patch_iboot(void) {
         return -1;
     }
 
+    chipid_patch();
+
+    if (!get_chipid) {
+        printf("could not find get_chipid() function\n");
+        return -1;
+    }
+
+    if (!get_boardid) {
+        printf("could not find get_boardid() function\n");
+        return -1;
+    }
+
     platform_init_mmu_patch();
 
     if (!payload_buf) {
@@ -71,18 +83,6 @@ int patch_iboot(void) {
 
     if (!el1_eret) {
         printf("could not find el1_eret\n");
-        return -1;
-    }
-
-    chipid_patch();
-
-    if (!get_chipid) {
-        printf("could not find get_chipid() function\n");
-        return -1;
-    }
-
-    if (!get_boardid) {
-        printf("could not find get_boardid() function\n");
         return -1;
     }
 

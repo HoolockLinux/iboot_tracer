@@ -15,12 +15,11 @@ static const struct whitelist_range whitelist_addr[] = {};
  * cannot use va arg for some reason
  */
 
-#define L2_ENTRY_SIZE 0x2000000
-#define L2_TTE(addr) (V->l2_base + (addr / L2_ENTRY_SIZE)*sizeof(uint64_t))
-#define CORRUPT_TTE(addr) clear64((uint64_t)L2_TTE(addr), PTE_VALID)
-#define FIX_TTE(addr) set64((uint64_t)L2_TTE(addr), PTE_VALID)
+#define L2_ENTRY_SIZE ((V->pagesize * V->pagesize) / sizeof(uint64_t))
+#define CORRUPT_TTE(addr) clear64((uint64_t)pt_walk(addr), PTE_VALID)
+#define FIX_TTE(addr) set64((uint64_t)pt_walk(addr), PTE_VALID)
 // this works because most of iboot runs in EL0
-#define NO_UNPRIV_ACCESS_TTE(addr) clear64((uint64_t)L2_TTE(addr), PTE_UNPRIV_ACCESS)
+#define NO_UNPRIV_ACCESS_TTE(addr) clear64((uint64_t)pt_walk(addr), PTE_UNPRIV_ACCESS)
 
 struct arm_exception_frame64 {
 	uint64_t	regs[29];	// x0-x28
@@ -90,6 +89,26 @@ INTERNAL static void flush_tlbs(void)
     sysop("isb");
 }
 #endif
+
+INTERNAL static u64 *pt_walk(u64 addr)
+{
+    u64 *base = (u64*)V->pt_base;
+    if (V->pagesize == 0x4000) {
+        // 16K is easy, the mmu map is linear
+        return base + (addr / L2_ENTRY_SIZE);
+    } else {
+        // 4K has a single layer of indreiction
+        u32 l1_sz = 0x40000000;
+        u64 *l1_ttep = base + (addr / l1_sz); // pointer arith
+        // valid ?!
+        if ((*l1_ttep & 3) != 3)
+            return NULL;
+        u64 *l2_ttep = (u64*)((*l1_ttep) & 0xffffff000);
+        u64 l2_off = (addr & (l1_sz-1)) / L2_ENTRY_SIZE;
+        // do not check here since we may intentionally corrupt
+        return l2_ttep + l2_off;
+    }
+}
 
 INTERNAL static uint64_t virt_to_phys(uint64_t vaddr) {
     __asm__ volatile("at\tS1E1R, %0" : : "r"(vaddr) : "memory");
@@ -406,20 +425,26 @@ uint64_t payload_init(uint64_t* ttbr0)
     }
 #endif
 
-    V->l2_base = (uint64_t)ttbr0;
-#if defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
+    V->pagesize = 0x4000;
+    if (soc_info_table[index % SOC_TABLE_LEN].pmgr_off == 57)
+        V->pagesize = 0x1000;
+
+    V->pt_base = (uint64_t)ttbr0;
+#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001) || defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
     if ((uint64_t)ttbr0 & 0x800000000)
-        V->l2_base += 0x4000; /* iBootStage2 uses L1 */
+        V->pt_base += V->pagesize; /* iBootStage2 uses L1 */
 #endif
 
     for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u16); i++) {
-        uint64_t addr = FIELD_GET(TRACE_CONFIG_OAB, trace_config[i]) << 25;
+        uint64_t addr = FIELD_GET(TRACE_CONFIG_OAB, trace_config[i]) << 21;
 #if defined(HAVE_FAULT_TRACE)
-        if (trace_config[i] & TRACE_CONFIG_FLAG_FAULT)
-            CORRUPT_TTE(addr);
-        else
+        if (trace_config[i] & TRACE_CONFIG_FLAG_FAULT) {
+                CORRUPT_TTE(addr);
+        } else
 #endif
+        {
             NO_UNPRIV_ACCESS_TTE(addr);
+        }
     }
 
     __builtin_arm_wsr64("ttbr0_el1", (uint64_t)ttbr0);
