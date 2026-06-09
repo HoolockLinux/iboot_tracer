@@ -25,8 +25,17 @@ size_t iboot_len;
 int patch_iboot(void) {
     printf("starting ibootpatch3\n");
 
-    iboot_base = *(uint64_t*)(iboot_buf + 0x300);
-    uint64_t iboot_end = *(uint64_t*)(iboot_buf + 0x308);
+    uint32_t *ldr = pf_find_next((uint32_t *)iboot_buf, 10, 0x58000001, 0xff00001f);
+    if (!ldr) {
+        printf("%s: failed to find initial ldr!\n", __func__);
+        return -1;
+    }
+
+    uint32_t ldr_off = (ldr[0] >> 5) & 0x7ffff; // uint32_t takes care of << 2
+    uint64_t *iboot_base_p = (uint64_t *)(ldr + ldr_off);
+
+    iboot_base = iboot_base_p[0];
+    uint64_t iboot_end = iboot_base_p[1];
 
     printf("%s: iboot_base = 0x%" PRIx64 "\n", __func__, iboot_base);
     printf("%s: iboot_end = 0x%" PRIx64 "\n", __func__, iboot_end);
