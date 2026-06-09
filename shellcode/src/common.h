@@ -79,6 +79,18 @@ static const struct soc_info soc_info_table[SOC_TABLE_LEN] = {
 };
 #endif
 
+#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001)
+#define HAVE_PAGE_4K
+#endif
+
+#if defined(HAVE_SOC_S8000) || defined(HAVE_SOC_S8001) || defined(HAVE_SOC_S8003) || defined(HAVE_SOC_T8010) || defined(HAVE_SOC_T8011) || defined(HAVE_SOC_T8012) || defined(HAVE_SOC_T8015)
+#define HAVE_PAGE_16K
+#endif
+
+#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001) || defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
+#define HAVE_IBOOTSTAGE2
+#endif
+
 extern uint16_t get_chipid(void);
 extern uint16_t get_boardid(void);
 

@@ -93,10 +93,21 @@ INTERNAL static void flush_tlbs(void)
 INTERNAL static u64 *pt_walk(u64 addr)
 {
     u64 *base = (u64*)V->pt_base;
-    if (V->pagesize == 0x4000) {
+
+#if defined(HAVE_PAGE_4K) && defined(HAVE_PAGE_16K)
+    if (V->pagesize == 0x4000)
+#endif
+#if defined(HAVE_PAGE_16K)
+    {
         // 16K is easy, the mmu map is linear
         return base + (addr / L2_ENTRY_SIZE);
-    } else {
+    }
+#endif
+#if defined(HAVE_PAGE_4K) && defined(HAVE_PAGE_16K)
+    else
+#endif
+#if defined(HAVE_PAGE_4K)
+    {
         // 4K has a single layer of indreiction
         u32 l1_sz = 0x40000000;
         u64 *l1_ttep = base + (addr / l1_sz); // pointer arith
@@ -108,6 +119,7 @@ INTERNAL static u64 *pt_walk(u64 addr)
         // do not check here since we may intentionally corrupt
         return l2_ttep + l2_off;
     }
+#endif
 }
 
 INTERNAL static uint64_t virt_to_phys(uint64_t vaddr) {
@@ -430,7 +442,7 @@ uint64_t payload_init(uint64_t* ttbr0)
         V->pagesize = 0x1000;
 
     V->pt_base = (uint64_t)ttbr0;
-#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001) || defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
+#if defined(HAVE_IBOOTSTAGE2)
     if ((uint64_t)ttbr0 & 0x800000000)
         V->pt_base += V->pagesize; /* iBootStage2 uses L1 */
 #endif
@@ -449,5 +461,5 @@ uint64_t payload_init(uint64_t* ttbr0)
 
     __builtin_arm_wsr64("ttbr0_el1", (uint64_t)ttbr0);
     sysop("isb");
-    return (uint64_t)ttbr0; // 0x180000000
+    return (uint64_t)ttbr0;
 }
