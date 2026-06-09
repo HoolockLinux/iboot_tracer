@@ -20,7 +20,7 @@ struct __attribute__((packed)) payload_variables {
     uint16_t chipid;
     uint16_t pagesize;
     uint16_t reserved1;
-    uint64_t l2_base;
+    uint64_t pt_base; // mmu walk base, covers all mmio
     uint64_t uart_pmgr_reg;
     uint64_t uart_base;
     uint64_t trace_hook_var[2];

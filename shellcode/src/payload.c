@@ -92,7 +92,7 @@ INTERNAL static void flush_tlbs(void)
 
 INTERNAL static u64 *pt_walk(u64 addr)
 {
-    u64 *base = (u64*)V->l2_base;
+    u64 *base = (u64*)V->pt_base;
     if (V->pagesize == 0x4000) {
         // 16K is easy, the mmu map is linear
         return base + (addr / L2_ENTRY_SIZE);
@@ -429,10 +429,10 @@ uint64_t payload_init(uint64_t* ttbr0)
     if (soc_info_table[index % SOC_TABLE_LEN].pmgr_off == 57)
         V->pagesize = 0x1000;
 
-    V->l2_base = (uint64_t)ttbr0;
+    V->pt_base = (uint64_t)ttbr0;
 #if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001) || defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
     if ((uint64_t)ttbr0 & 0x800000000)
-        V->l2_base += V->pagesize; /* iBootStage2 uses L1 */
+        V->pt_base += V->pagesize; /* iBootStage2 uses L1 */
 #endif
 
     for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u16); i++) {
