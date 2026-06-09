@@ -6,6 +6,7 @@
 #include "plooshfinder.h"
 #include "plooshfinder32.h"
 #include "patches/platform_init_mmu.h"
+#include "patches/chipid.h"
 #include "asm/arm64.h"
 #include "common.h"
 
@@ -43,6 +44,16 @@ void *iboot_follow_xref(void *buf, uint32_t *stream) {
 
 
 bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
+    uint32_t *soc_p = (uint32_t*)get_chipid;
+    while (pf_maskmatch32(*soc_p, 0x14000000, 0x7c000000))
+        soc_p = pf_follow_branch(iboot_buf, soc_p);
+
+    uint16_t soc = ((*(uint32_t*)soc_p) >> 5) & 0xffff;
+    uint16_t pagesize = 0x4000;
+
+    if (soc == 0x8960 || soc == 0x7000 || soc == 0x7001)
+        pagesize = 0x1000;
+
     // search backwards for adr xN, iboot_base
     uint32_t *adr = NULL;
     uint32_t *insn = stream - 2;
@@ -73,11 +84,6 @@ bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
         return false;
     }
 
-    uint32_t *text_end = adr2 + (adr_off(adr2) >> 2);
-    uint64_t text_end_pa = ALIGN_UP(iboot_ptr_to_pa(text_end), 4);
-    uint64_t text_end_pa_aligned = ALIGN_UP(text_end_pa, 0x4000);
-    size_t payload_max_len = text_end_pa_aligned - text_end_pa;
-
     uint32_t *adr3 = pf_find_next(adr2+1, 10, 0x10000000, 0x9f000000); // adr
     if (!adr3) {
         printf("%s: failed to find adr xN, data_start (0x%" PRIx64 ")\n", __func__, iboot_ptr_to_pa(adr2));
@@ -85,6 +91,10 @@ bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
     }
 
     uint32_t *adr3_dest = adr3 + (adr_off(adr3) >> 2);
+    uint32_t *text_end = adr2 + (adr_off(adr2) >> 2);
+    uint64_t text_end_pa = ALIGN_UP(iboot_ptr_to_pa(text_end), 4);
+    uint64_t text_end_pa_aligned = ALIGN_UP(text_end_pa, pagesize);
+    size_t payload_max_len = text_end_pa_aligned - text_end_pa;
 
     if (iboot_ptr_to_pa(adr3_dest) != text_end_pa_aligned) {
         printf("adr3_dest not match aligned text end! 0x%" PRIx64 " != 0x%" PRIx64 " (0x%" PRIx64 ")\n", iboot_ptr_to_pa(adr3_dest), text_end_pa_aligned, iboot_ptr_to_pa(adr3));
@@ -108,7 +118,7 @@ bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
     }
 
     uint64_t data_end_pa = ALIGN_UP(iboot_ptr_to_pa(data_end), 8);
-    uint64_t data_end_pa_aligned = ALIGN_UP(data_end_pa, 0x4000);
+    uint64_t data_end_pa_aligned = ALIGN_UP(data_end_pa, pagesize);
     size_t payload_var_max_len = data_end_pa_aligned - data_end_pa;
 
     printf("%s: %zd bytes available to payload\n", __func__, payload_max_len);

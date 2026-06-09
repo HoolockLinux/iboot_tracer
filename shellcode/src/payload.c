@@ -22,6 +22,13 @@ static const struct whitelist_range whitelist_addr[] = {};
 // this works because most of iboot runs in EL0
 #define NO_UNPRIV_ACCESS_TTE(addr) clear64((uint64_t)L2_TTE(addr), PTE_UNPRIV_ACCESS)
 
+#define L2_ENTRY_SIZE_4K 0x200000
+#define L2_TTE_4K(addr) (V->l2_base + (addr / L2_ENTRY_SIZE_4K)*sizeof(uint64_t))
+#define CORRUPT_TTE_4K(addr) clear64((uint64_t)L2_TTE_4K(addr), PTE_VALID)
+#define FIX_TTE_4K(addr) set64((uint64_t)L2_TTE_4K(addr), PTE_VALID)
+// this works because most of iboot runs in EL0
+#define NO_UNPRIV_ACCESS_TTE_4K(addr) clear64((uint64_t)L2_TTE_4K(addr), PTE_UNPRIV_ACCESS)
+
 struct arm_exception_frame64 {
 	uint64_t	regs[29];	// x0-x28
 	uint64_t	fp;
