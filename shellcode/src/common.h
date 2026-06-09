@@ -18,7 +18,8 @@ typedef int32_t             s32;
 struct __attribute__((packed)) payload_variables {
     uint16_t payload_flags;
     uint16_t chipid;
-    uint32_t reserved1;
+    uint16_t pagesize;
+    uint16_t reserved1;
     uint64_t l2_base;
     uint64_t uart_pmgr_reg;
     uint64_t uart_base;
@@ -115,8 +116,9 @@ extern struct payload_variables* V;
 /* Trace with TransFault (slow) instead of No-UnPriv-Access (fast) */
 #define TRACE_CONFIG_FLAG_FAULT BIT(0)
 /* Output address block */
-// bit [35:25]
-#define TRACE_CONFIG_OAB        GENMASK(15, 5) // 25
+// bit [35:25] 16K
+// bit [35:21] 4K
+#define TRACE_CONFIG_OAB        GENMASK(15, 1) // 21
 
 static u8 read8(u64 addr)
 {
