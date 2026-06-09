@@ -1,10 +1,9 @@
 OS != uname -s
-STDC_VERSION = gnu23
+STDC_VERSION = c11
 ifeq ($(OS),Darwin)
 LD_FOR_TARGET != xcrun --find ld-classic
 ifeq ($(LD_FOR_TARGET),)
 LD_FOR_TARGET != xcrun --find ld
-STDC_VERSION = c17
 endif
 OTOOL = otool
 else
