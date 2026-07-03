@@ -11,6 +11,9 @@ RTKIT_POWET_STATE_QUIESCED = 0x10
 RTKIT_POWET_STATE_ON = 0x20
 RTKIT_POWET_STATE_INIT = 0x220
 
+#CPU_CONTROL = 0x28 (before mbox regs)
+#mbox regs is +0x1000 or +0x4000
+
 class MBoxRegs:
     A2I_CONTROL = 0x8
 
@@ -20,8 +23,6 @@ class MBoxRegs:
     A2I_RECV    = 0x18
 
     I2A_CONTROL = 0x20
-
-    CPU_CONTROL = 0x28
 
     I2A_SEND    = 0x30
     I2A_RECV    = 0x38
