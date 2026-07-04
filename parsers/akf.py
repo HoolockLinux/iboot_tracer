@@ -77,6 +77,12 @@ class Mgmt_EPMap_Ack(ManagementMessage):
     BASE     = 34, 32
     MAP_MORE = 31, 1 # 31-1: bitmap, 0: more
 
+class Mgmt_EPMap(ManagementMessage):
+    TYPE    = 56, 52, Constant(8)
+    LAST    = 51
+    BASE    = 34, 32
+    BITMAP  = 31, 0
+
 class Mgmt_SetAPPower(ManagementMessage):
     TYPE    = 59, 52, Constant(0xb)
     STATE   = 15, 0
@@ -105,6 +111,12 @@ class Sys_Log(RTKMessage):
     EP      = 63, 56, Constant(2)
     TYPE    = 55, 52, Constant(5)
     INDEX   = 7, 0
+
+class Sys_Init(RTKMessage):
+    EP      = 63, 56, Constant(2)
+    TYPE        = 55, 52, Constant(8)
+    ENTRYSIZE   = 39, 24
+    COUNT       = 15, 0
 
 class AKFParser:
     addr: int
@@ -137,8 +149,52 @@ class AKFParser:
             self.iop_power = RTKIT_POWET_STATE_INIT
             self.print(f"rtkit IOP power state {RTKIT_POWET_STATE_OFF} -> {RTKIT_POWET_STATE_INIT}")
 
-        if val != 0:
-            raise NotImplementedError("Non Zero mailbox I2A")
+        msg = RTKMessage(val)
+        match msg.EP:
+            case 0: # RTKIT_EP_MGMT
+                mgmt = ManagementMessage(val)
+                match mgmt.TYPE:
+                    case 1: # HELLO
+                        hello = Mgmt_Hello(val)
+                        if hello.MIN_VER > 10:
+                            self.app_start = 0x20
+                        else:
+                            self.app_start = 0x6
+                        self.print(f"mgmt hello: {Mgmt_Hello(val)}")
+                    case 7:
+                        self.print(f"mgmt iop_power_ack: {Mgmt_IOPPowerAck(val)}")
+                    case 8: # Mgmt_EPMap
+                        self.print(f"mgmt epmap_ack: {Mgmt_EPMap(val)}")
+                    case 0xb: # Power
+                        self.print(f"mgmt power_ack: {Mgmt_SetAPPower(val)}")
+                    case _:
+                        raise Exception(f"Not supported Mgmt I2A message: {msg}")
+            case 1: # RTKIT_EP_CRASHLOG
+                crash = CrashLogMessage(val)
+                match crash.TYPE:
+                    case 1:
+                        self.print(f"crash_bfr: {Crash_BufferRequest(val)}")
+                    case _:
+                        raise Exception(f"Not supported Crashlog I2A message: {msg}")
+            case 2: # RTKIT_EP_SYSLOG
+                sys = SysLogMessage(val)
+                match sys.TYPE:
+                    case 1:
+                        self.print(f"sys_bfr: {Sys_BufferRequest(val)}")
+                    case 5:
+                        self.print(f"sys_log: {Sys_Log(val)}")
+                    case 8:
+                        self.print(f"sys_init: {Sys_Init(val)}")
+                    case _:
+                        raise Exception(f"Not supported Syslog I2A message: {msg}")
+            case _:
+                ep = (val >> 56) & 0xff
+                if (ep < self.app_start):
+                    self.print(f"UNKNOWN ENDPOINT MESSAGE: {RTKMessage(val)}")
+                elif self.app_ep_i2a is not None:
+                    self.app_ep_i2a(self, ep - self.app_start, val)
+                else:
+                    self.print(f"A2I App endpoint rel {hex(ep - self.app_start)} message {RTKMessage(val)}")
 
     def mailbox_A2I(self, val):
         if self.iop_power == RTKIT_POWET_STATE_OFF:
@@ -152,26 +208,24 @@ class AKFParser:
                 match mgmt.TYPE:
                     case 2: # HELLO_ACK
                         hello = Mgmt_HelloAck(val)
-                        if hello.MIN_VER > 10:
-                            self.app_start = 0x20
-                        else:
-                            self.app_start = 0x6
                         self.print(f"mgmt hello_ack: {Mgmt_HelloAck(val)}")
                     case 5: # MGMT_STAREP
                         self.print(f"mgmt startep:   {Mgmt_StartEP(val)}")
+                    case 6:
+                        self.print(f"mgmt iop_power: {Mgmt_SetIOPPower(val)}")
                     case 8: # Mgmt_EPMap_Ack
                         self.print(f"mgmt epmap_ack: {Mgmt_EPMap_Ack(val)}")
                     case 0xb: # power
                         self.print(f"mgmt power_ack: {Mgmt_SetAPPower(val)}")
                     case _:
-                        self.print(f"Other Mgmt message: {msg}")
+                        raise Exception(f"Not supported Mgmt A2I message: {msg}")
             case 1: # RTKIT_EP_CRASHLOG
                 crash = CrashLogMessage(val)
                 match crash.TYPE:
                     case 1:
                         self.print(f"crash_bfr: {Crash_BufferRequest(val)}")
                     case _:
-                        self.print(f"Other CrashLog message: {msg}")
+                        raise Exception(f"Not supported CrashLog A2I message: {msg}")
             case 2: # RTKIT_EP_SYSLOG
                 sys = SysLogMessage(val)
                 match sys.TYPE:
@@ -180,13 +234,13 @@ class AKFParser:
                     case 5:
                         self.print(f"sys_log: {Sys_Log(val)}")
                     case _:
-                        self.print(f"Other SysLog message: {msg}")
+                        raise Exception(f"Not supported SysLog A2I message: {msg}")
             case _:
                 ep = (val >> 56) & 0xff
                 if (ep < self.app_start):
                     self.print(f"UNKNOWN ENDPOINT MESSAGE: {RTKMessage(val)}")
-                elif self.app_ep_i2a is not None:
-                    self.app_ep_i2a(self, ep - self.app_start, val)
+                elif self.app_ep_a2i is not None:
+                    self.app_ep_a2i(self, ep - self.app_start, val)
                 else:
                     self.print(f"I2A App endpoint rel {hex(ep - self.app_start)} message {RTKMessage(val)}")
 
