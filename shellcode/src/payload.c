@@ -360,7 +360,7 @@ INTERNAL static int emulate_load(struct arm_exception_frame64 *ctx, u32 insn, u6
             regs[Rt] &= 0xffffffff;
     } else if ((insn & 0x3fe04c00) == 0x38604800) {
         // LDRx (register)
-        regs[Rt] = read_by_width(far_addr, width);
+        val[0] = regs[Rt] = read_by_width(far_addr, width);
     } else if ((insn & 0x3fa04c00) == 0x38a04800) {
         // LDRSx (register)
         val[0] = regs[Rt] = (s64)EXT(read_by_width(far_addr, width), 8 << *width);
