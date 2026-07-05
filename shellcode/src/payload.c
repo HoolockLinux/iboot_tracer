@@ -133,7 +133,7 @@ INTERNAL static uint64_t virt_to_phys(uint64_t vaddr) {
 
     return phys_addr;
 }
-
+void pre_write_hook(uint64_t vaddr, uint64_t *val);
 INTERNAL static u64 read_by_width(u64 addr, u64 *width)
 {
     switch (*width) {
@@ -221,11 +221,12 @@ void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
             write8(addr, val[0]);
         else if (width == 1)
             write16(addr, val[0]);
-        else if (width == 2)
+        else if (width == 2) {
             write32(addr, val[0]);
-        else if (width == 3)
+        } else if (width == 3) {
+            pre_write_hook(addr, val);
             write64(addr, val[0]);
-        else if (width == 4) {
+       }  else if (width == 4) {
             if(vaddr == addr){
                 O('|');uart_put64(addr+8);O('@');uart_put64(virt_to_phys(addr+8));
                 O('=');uart_put64(val[1]);
