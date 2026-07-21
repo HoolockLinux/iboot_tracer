@@ -42,7 +42,6 @@ void *iboot_follow_xref(void *buf, uint32_t *stream) {
     return iboot_pa_to_ptr(followed_addr);
 }
 
-
 bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
     uint32_t *soc_p = (uint32_t*)get_chipid;
     while (pf_maskmatch32(*soc_p, 0x14000000, 0x7c000000))
@@ -138,6 +137,61 @@ bool patch_platform_init_mmu(struct pf_patch_t *patch, uint32_t *stream) {
     return true;
 }
 
+bool patch_platform_init_mmu_4k_12(struct pf_patch_t *patch, uint32_t *stream) 
+{
+    static uint64_t matched = 0;
+    if (matched == 99)
+        return false;
+
+    matched++;
+
+    uint64_t adr_ref = iboot_ptr_to_pa(&stream[0]) + adr_off(&stream[0]);
+
+    switch (matched) {
+        case 1:
+            if (adr_ref < iboot_base) {
+                printf("%s: unexpected adr_ref match 1: 0x%" PRIx64 "\n", __func__, adr_ref);
+                goto out;
+            }
+            uint64_t text_end = ALIGN_UP(adr_ref, 4);
+            uint64_t text_end_aligned = ALIGN_UP(adr_ref, 0x1000);
+            size_t payload_max_len = text_end_aligned - text_end;
+            printf("%s: %zd bytes available @ 0x%" PRIx64 " for payload\n", __func__, payload_max_len, text_end);
+            if (payload_max_len < payload_bin_len) {
+                printf("%s: payload too large: %" PRIu32 " > %zd\n", __func__, payload_bin_len, payload_max_len);
+                goto out;
+            }
+
+            payload_buf = (uint8_t*)iboot_pa_to_ptr(adr_ref);
+            break;
+        case 2:
+            if (adr_ref < (uint64_t)payload_buf) {
+                printf("%s: unexpected adr_ref match 2: 0x%" PRIx64 "\n", __func__, adr_ref);
+                matched = 99;
+                return false;
+            }
+            uint64_t data_end = ALIGN_UP(adr_ref, 8);
+            uint64_t data_end_aligned = ALIGN_UP(adr_ref, 0x1000);
+            size_t payload_var_max_len = data_end_aligned - data_end;
+            printf("%s: %zd bytes available @ 0x%" PRIx64 " for payload variables\n", __func__, payload_var_max_len, data_end);
+            if (payload_var_max_len < PAYLOAD_VARIABLES_SIZE) {
+                printf("%s: payload variables too large: %" PRIu32 " > %zd\n", __func__, PAYLOAD_VARIABLES_SIZE, payload_var_max_len);
+                goto out;
+            }
+            payload_var = (uint8_t*)iboot_pa_to_ptr(adr_ref);
+            break;
+        case 3:
+            break;
+        default:
+            printf("%s: too many matches\n", __func__);
+            goto out;
+    }
+    return true;
+out:
+    matched = 99;
+    return false;
+}
+
 bool patch_write_ttbr0(struct pf_patch_t *patch, uint32_t *stream) {
     printf("%s: Found write_ttbr0 = 0x%" PRIx64 "\n", __func__, iboot_ptr_to_pa(&stream[0]));
     ttbr0 = stream; 
@@ -203,6 +257,20 @@ void platform_init_mmu_patch(void) {
 
     struct pf_patch_t platform_init_mmu_t8012 = pf_construct_patch(pim_t8012_matches, pim_t8012_masks, sizeof(pim_t8012_matches) / sizeof(uint32_t), (void*)patch_platform_init_mmu);
 
+    uint32_t pim_4k_12_matches[] = {
+        0x10000008, // adr x8, section_end
+        0xd503201f, // nop
+        0x913ffd08, // add x8, x8, #0xfff
+        0x9274cd08, // and x8, x8, #-0x1000
+    };
+
+    uint32_t pim_4k_12_masks[] = {
+        0x9f00001f,
+        0xffffffff,
+        0xffffffff,
+        0xffffffff,
+    };
+    struct pf_patch_t platform_init_mmu_4k_12 = pf_construct_patch(pim_4k_12_matches, pim_4k_12_masks, sizeof(pim_4k_12_matches) / sizeof(uint32_t), (void*)patch_platform_init_mmu_4k_12);
 
     // match entire function
     uint32_t write_ttbr0_matches[] = {
@@ -223,6 +291,7 @@ void platform_init_mmu_patch(void) {
         platform_init_mmu_t8010,
         platform_init_mmu_t8012,
         platform_init_mmu_t8015,
+        platform_init_mmu_4k_12,
         write_ttbr0,
     };
 

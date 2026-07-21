@@ -37,9 +37,24 @@ bool patch_exception(struct pf_patch_t *patch, uint32_t *stream) {
     return true;
 }
 
+bool patch_exception12(struct pf_patch_t *patch, uint32_t *stream) {
+    sync_panic = stream + 1; // steal 1 insn
+    stream[0] = arm64_branch(stream, payload_buf, false);
+
+    printf("%s: iboot's arm_synchronous_exception() to payload's entry(): 0x%" PRIx64 " -> 0x%" PRIx64"\n", __func__, iboot_ptr_to_pa(stream), iboot_ptr_to_pa(payload_buf));
+    return true;
+}
+
 bool patch_eret(struct pf_patch_t *patch, uint32_t *stream) {
     printf("%s: Found el1_eret = 0x%" PRIx64 "\n", __func__, iboot_ptr_to_pa(stream));
     el1_eret = stream;
+
+    return true;
+}
+
+bool patch_eret12(struct pf_patch_t *patch, uint32_t *stream) {
+    printf("%s: Found el1_eret = 0x%" PRIx64 "\n", __func__, iboot_ptr_to_pa(&stream[1]));
+    el1_eret = &stream[1];
 
     return true;
 }
@@ -73,10 +88,39 @@ void exception_patch(void) {
 
     struct pf_patch_t el1_eret = pf_construct_patch(el1_eret_matches, el1_eret_masks, sizeof(el1_eret_matches) / sizeof(uint32_t), (void*)patch_eret);
 
+    uint32_t exc_sync_12_matches[] = {
+        0xb9411808, // ldr w8, [x0, #0x118]
+        0x12061509, // and w9, w8, #0xfc000000
+        0x52aa800a, // mov w10, #0x54000000
+    };
+
+    uint32_t exc_sync_12_masks[] = {
+        0xffffffff,
+        0xffffffff,
+        0xffffffff,
+    };
+
+    struct pf_patch_t exc_sync_12 = pf_construct_patch(exc_sync_12_matches, exc_sync_12_masks, sizeof(exc_sync_12_matches) / sizeof(uint32_t), (void*)patch_exception12);
+
+    uint32_t el1_eret_12_matches[] = {
+        0xd61f0040, // br x2
+        0x9100001f, // mov sp, x0
+        0xad4987e0, // ldp q0, q1, [sp, #0x130]
+    };
+
+    uint32_t el1_eret_12_masks[] = {
+        0xffffffff,
+        0xffffffff,
+        0xffffffff,
+    };
+
+    struct pf_patch_t el1_eret_12 = pf_construct_patch(el1_eret_12_matches, el1_eret_12_masks, sizeof(el1_eret_12_matches) / sizeof(uint32_t), (void*)patch_eret12);
 
     struct pf_patch_t patches[] = {
         sync_exception,
+        exc_sync_12,
         el1_eret,
+        el1_eret_12,
     };
 
     struct pf_patchset_t patchset = pf_construct_patchset(patches, sizeof(patches) / sizeof(struct pf_patch_t), (void *) pf_find_maskmatch32);
