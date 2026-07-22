@@ -162,7 +162,7 @@ bool patch_platform_init_mmu_4k_12(struct pf_patch_t *patch, uint32_t *stream)
                 goto out;
             }
 
-            payload_buf = (uint8_t*)iboot_pa_to_ptr(adr_ref);
+            payload_buf = (uint8_t*)iboot_pa_to_ptr(text_end);
             break;
         case 2:
             if (adr_ref < (uint64_t)payload_buf) {
@@ -178,7 +178,7 @@ bool patch_platform_init_mmu_4k_12(struct pf_patch_t *patch, uint32_t *stream)
                 printf("%s: payload variables too large: %" PRIu32 " > %zd\n", __func__, PAYLOAD_VARIABLES_SIZE, payload_var_max_len);
                 goto out;
             }
-            payload_var = (uint8_t*)iboot_pa_to_ptr(adr_ref);
+            payload_var = (uint8_t*)iboot_pa_to_ptr(data_end);
             break;
         case 3:
             break;
