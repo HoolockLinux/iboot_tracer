@@ -7,6 +7,57 @@
 #define PAYLOAD_VARIABLES_SIZE 0x40
 #define SOC_TABLE_LEN   19
 
+#define EXT(n, b) (((s32)(((u32)(n)) << (32 - (b)))) >> (32 - (b)))
+#define CHECK_RN                                                                                   \
+    if (Rn == 31)                                                                                  \
+    return 1
+#define BIT(x)                 (1UL << (x))
+#define CACHE_LINE_SIZE 64
+#define CACHE_LINE_LOG2 6
+#define sysop(op) __asm__ volatile(op ::: "memory")
+#define GENMASK(msb, lsb)      ((BIT((msb + 1) - (lsb)) - 1) << (lsb))
+#define _FIELD_LSB(field)      ((field) & ~(field - 1))
+#define FIELD_PREP(field, val) (((val) * (_FIELD_LSB(field))) & (field))
+#define FIELD_GET(field, val)  (((val) & (field)) / _FIELD_LSB(field))
+
+#define ALIGN_UP(x, a)   (((x) + ((a) - 1)) & ~((a) - 1))
+#define ALIGN_DOWN(x, a) ((x) & ~((a) - 1))
+
+#define PAYLOAD_FLAG_ENABLE_UART    BIT(0)
+#ifndef INTERNAL
+#define INTERNAL __attribute__((visibility("internal")))
+#endif
+
+#define PTE_VALID           BIT(0)
+#define PTE_UNPRIV_ACCESS   BIT(6)
+
+/* Trace with TransFault (slow) instead of No-UnPriv-Access (fast) */
+#define TRACE_CONFIG_FLAG_FAULT BIT(0)
+/* Output address block */
+// bit [35:25] 16K
+// bit [35:21] 4K
+#define TRACE_CONFIG_OAB        GENMASK(15, 1) // 21
+
+#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001)
+#define HAVE_PAGE_4K
+#endif
+
+#if defined(HAVE_SOC_S8000) || defined(HAVE_SOC_S8001) || defined(HAVE_SOC_S8003) || defined(HAVE_SOC_T8010) || defined(HAVE_SOC_T8011) || defined(HAVE_SOC_T8012) || defined(HAVE_SOC_T8015)
+#define HAVE_PAGE_16K
+#endif
+
+#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001) || defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
+#define HAVE_IBOOTSTAGE2
+#endif
+
+#if defined(HAVE_PAGE_4K) && !defined(HAVE_PAGE_16K)
+#define PAGE_SIZE 0x1000
+#elif defined(HAVE_PAGE_16K) && !defined(HAVE_PAGE_4K)
+#define PAGE_SIZE 0x4000
+#else
+#define PAGE_SIZE V->pagesize
+#endif
+
 typedef __uint128_t uint128_t;
 typedef uint8_t             u8;
 typedef uint16_t            u16;
@@ -18,7 +69,11 @@ typedef int32_t             s32;
 struct __attribute__((packed)) payload_variables {
     uint16_t payload_flags;
     uint16_t chipid;
+#if defined(HAVE_PAGE_4K) && defined(HAVE_PAGE_16K)
     uint16_t pagesize;
+#else
+    uint16_t reserved0;
+#endif
     uint16_t reserved1;
     uint64_t pt_base; // mmu walk base, covers all mmio
     uint64_t uart_pmgr_reg;
@@ -79,18 +134,6 @@ static const struct soc_info soc_info_table[SOC_TABLE_LEN] = {
 };
 #endif
 
-#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001)
-#define HAVE_PAGE_4K
-#endif
-
-#if defined(HAVE_SOC_S8000) || defined(HAVE_SOC_S8001) || defined(HAVE_SOC_S8003) || defined(HAVE_SOC_T8010) || defined(HAVE_SOC_T8011) || defined(HAVE_SOC_T8012) || defined(HAVE_SOC_T8015)
-#define HAVE_PAGE_16K
-#endif
-
-#if defined(HAVE_SOC_S5L8960X) || defined(HAVE_SOC_T7000) || defined(HAVE_SOC_T7001) || defined (HAVE_SOC_S8000) || defined (HAVE_SOC_S8001) || defined (HAVE_SOC_S8003)
-#define HAVE_IBOOTSTAGE2
-#endif
-
 extern uint16_t get_chipid(void);
 extern uint16_t get_boardid(void);
 
@@ -99,38 +142,6 @@ static_assert(sizeof(struct payload_variables) == PAYLOAD_VARIABLES_SIZE, "Unexp
 #endif
 
 extern struct payload_variables* V;
-
-#define EXT(n, b) (((s32)(((u32)(n)) << (32 - (b)))) >> (32 - (b)))
-#define CHECK_RN                                                                                   \
-    if (Rn == 31)                                                                                  \
-    return 1
-#define BIT(x)                 (1UL << (x))
-#define PAGE_SIZE       0x4000
-#define CACHE_LINE_SIZE 64
-#define CACHE_LINE_LOG2 6
-#define sysop(op) __asm__ volatile(op ::: "memory")
-#define GENMASK(msb, lsb)      ((BIT((msb + 1) - (lsb)) - 1) << (lsb))
-#define _FIELD_LSB(field)      ((field) & ~(field - 1))
-#define FIELD_PREP(field, val) (((val) * (_FIELD_LSB(field))) & (field))
-#define FIELD_GET(field, val)  (((val) & (field)) / _FIELD_LSB(field))
-
-#define ALIGN_UP(x, a)   (((x) + ((a) - 1)) & ~((a) - 1))
-#define ALIGN_DOWN(x, a) ((x) & ~((a) - 1))
-
-#define PAYLOAD_FLAG_ENABLE_UART    BIT(0)
-#ifndef INTERNAL
-#define INTERNAL __attribute__((visibility("internal")))
-#endif
-
-#define PTE_VALID           BIT(0)
-#define PTE_UNPRIV_ACCESS   BIT(6)
-
-/* Trace with TransFault (slow) instead of No-UnPriv-Access (fast) */
-#define TRACE_CONFIG_FLAG_FAULT BIT(0)
-/* Output address block */
-// bit [35:25] 16K
-// bit [35:21] 4K
-#define TRACE_CONFIG_OAB        GENMASK(15, 1) // 21
 
 static u8 read8(u64 addr)
 {

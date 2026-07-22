@@ -15,7 +15,7 @@ static const struct whitelist_range whitelist_addr[] = {};
  * cannot use va arg for some reason
  */
 
-#define L2_ENTRY_SIZE ((V->pagesize * V->pagesize) / sizeof(uint64_t))
+#define L2_ENTRY_SIZE ((PAGE_SIZE * PAGE_SIZE) / sizeof(uint64_t))
 #define CORRUPT_TTE(addr) clear64((uint64_t)pt_walk(addr), PTE_VALID)
 #define FIX_TTE(addr) set64((uint64_t)pt_walk(addr), PTE_VALID)
 // this works because most of iboot runs in EL0
@@ -95,7 +95,7 @@ INTERNAL static u64 *pt_walk(u64 addr)
     u64 *base = (u64*)V->pt_base;
 
 #if defined(HAVE_PAGE_4K) && defined(HAVE_PAGE_16K)
-    if (V->pagesize == 0x4000)
+    if (PAGE_SIZE == 0x4000)
 #endif
 #if defined(HAVE_PAGE_16K)
     {
@@ -146,7 +146,6 @@ INTERNAL static u64 read_by_width(u64 addr, u64 *width)
         default:
             return read64(addr);
     }
-    
 }
 
 void* arm64_data_abort_exception(struct arm_exception_frame64 *frame)
@@ -437,14 +436,16 @@ uint64_t payload_init(uint64_t* ttbr0)
     }
 #endif
 
+#if defined(HAVE_PAGE_4K) && defined(HAVE_PAGE_16K)
     V->pagesize = 0x4000;
     if (soc_info_table[index % SOC_TABLE_LEN].pmgr_off == 57)
         V->pagesize = 0x1000;
+#endif
 
     V->pt_base = (uint64_t)ttbr0;
 #if defined(HAVE_IBOOTSTAGE2)
     if ((uint64_t)ttbr0 & 0x800000000)
-        V->pt_base += V->pagesize; /* iBootStage2 uses L1 */
+        V->pt_base += PAGE_SIZE; /* iBootStage2 uses L1 */
 #endif
 
     for (uint8_t i = 0; i < sizeof(trace_config)/sizeof(u16); i++) {
