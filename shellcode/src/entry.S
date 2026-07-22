@@ -10,16 +10,16 @@
 
 _entry:
     ldr     w8, [x0,#0x118] // stolen insn on iOS 12 iboto
-    and     w9, w8, #0xfc000000
-    lsr     w9, w9, #0x1a
+    and     w17, w8, #0xfc000000
+    lsr     w17, w17, #0x1a
     //w9 is current esr_ec
-    cmp     w9, #ESR_EC_DABORT_EL0
+    cmp     w17, #ESR_EC_DABORT_EL0
     b.eq     custom_handler
-    cmp     w9, #ESR_EC_DABORT_EL1
+    cmp     w17, #ESR_EC_DABORT_EL1
     b.eq     custom_handler
 
-    adr lr, #0 // gets patched by patcher to DATA_ABORT_PANIC_CALL
-    ret
+    adr x17, #0 // gets patched by patcher to DATA_ABORT_PANIC_CALL
+    br x17
 
 _get_boardid:
     b . // patched to iboot's get_boardid function

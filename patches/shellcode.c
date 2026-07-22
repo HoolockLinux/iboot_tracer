@@ -42,7 +42,7 @@ int shellcode_patch(void)
     uint32_t insn;
 
     /* DATA_ABORT_PANIC_CALL */
-    if (assemble_adr(&shc[7], sync_panic, REG_LR, &insn)) {
+    if (assemble_adr(&shc[7], sync_panic, 17/*x17*/, &insn)) {
         printf("%s: could not assemble shellcode (DATA_ABORT_PANIC_CALL)\n", __func__);
         return -1;
     }
